@@ -34,7 +34,7 @@ jobs:
           retention-days: 1   # automatically deletes after 1 day
 
       - name: Upload to Google Drive
-        uses: prabirshrestha/action-google-drive@v1
+        uses: rishabh3112/google-drive-upload@v1
         with:
           json_key: ${{ secrets.GDRIVE_SERVICE_ACCOUNT }}
           folder_id: 1EVIHk24_3C7DsCLcYoQOdrM_T11UrkWH
