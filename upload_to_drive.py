@@ -1,30 +1,22 @@
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
+import os
 
-# Path to your service account JSON
-SERVICE_ACCOUNT_FILE = 'sa.json'  # In GitHub Actions, you can write it to this path first
-FOLDER_ID = '1EVIHk24_3C7DsCLcYoQOdrM_T11UrkWH'  # Your Drive folder ID
-FILE_PATH = 'spotify.png'  # File to upload
-FILE_NAME = 'spotify.png'  # Name on Drive
+# Path to your service account JSON file
+SERVICE_ACCOUNT_FILE = os.environ.get("GDRIVE_SERVICE_ACCOUNT_JSON", "service_account.json")
 
-# Authenticate with the service account
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE,
-    scopes=['https://www.googleapis.com/auth/drive']
-)
+# Authenticate
+gauth = GoogleAuth()
+gauth.LoadServiceConfigFile(SERVICE_ACCOUNT_FILE)  # use your JSON
+drive = GoogleDrive(gauth)
 
-# Build the Drive API client
-service = build('drive', 'v3', credentials=credentials)
+# File to upload
+file_path = "spotify.png"
+file_name_in_drive = "spotify.png"
 
-# Create file metadata
-file_metadata = {
-    'name': FILE_NAME,
-    'parents': [FOLDER_ID]  # Specify folder
-}
+# Create & upload
+file = drive.CreateFile({'title': file_name_in_drive})
+file.SetContentFile(file_path)
+file.Upload()
 
-# Upload the file
-media = MediaFileUpload(FILE_PATH, resumable=True)
-file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-
-print(f"Uploaded file with ID: {file.get('id')}")
+print(f"✅ Uploaded {file_name_in_drive} successfully!")
