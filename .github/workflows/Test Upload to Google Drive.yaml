@@ -1,55 +1,30 @@
 name: Upload to Google Drive
- 
+
 on:
-  workflow_dispatch: # can trigger manually
+  push:
+    branches: [ main ]  # Runs when you push to main
+  workflow_dispatch:    # Allows you to run it manually
 
 jobs:
   upload:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.12
+      - name: Install Rclone
+        run: sudo apt-get install -y rclone
 
-      - name: Install dependencies
+      - name: Create Service Account File
         run: |
-          python -m pip install --upgrade pip
-          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+          echo '${{ secrets.GDRIVE_SERVICE_ACCOUNT }}' > sa.json
 
-      - name: Write service account JSON
-        run: echo "${{ secrets.GDRIVE_SERVICE_ACCOUNT }}" > /tmp/sa.json
-
-      - name: Upload file to Google Drive
+      - name: Upload File to GDrive
+        env:
+          # We configure rclone via environment variables to avoid a config file
+          RCLONE_CONFIG_MYDRIVE_TYPE: drive
+          RCLONE_CONFIG_MYDRIVE_SCOPE: drive
+          RCLONE_CONFIG_MYDRIVE_SERVICE_ACCOUNT_FILE: sa.json
         run: |
-          python - <<EOF
-          import json
-          from google.oauth2 import service_account
-          from googleapiclient.discovery import build
-
-          # Path to service account JSON
-          SERVICE_ACCOUNT_FILE = "/tmp/sa.json"
-
-          # Authenticate
-          credentials = service_account.Credentials.from_service_account_file(
-              SERVICE_ACCOUNT_FILE,
-              scopes=["https://www.googleapis.com/auth/drive"]
-          )
-
-          service = build('drive', 'v3', credentials=credentials)
-
-          # File to upload
-          file_metadata = {
-              'name': 'spotify.png',   # name in Drive
-              # Optional: upload to a specific folder
-              # 'parents': ['YOUR_FOLDER_ID']
-          }
-          media = googleapiclient.http.MediaFileUpload('spotify.png', resumable=True)
-
-          file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-          print(f"Uploaded file with ID: {file.get('id')}")
-          EOF
+          # Usage: rclone copy <src> <remote_name>:<folder_id_or_path>
+          rclone copy spotify.png mydrive: --drive-use-trash=false -v
