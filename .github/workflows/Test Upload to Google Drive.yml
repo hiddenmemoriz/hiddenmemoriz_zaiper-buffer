@@ -1,23 +1,16 @@
 name: Test GDrive Service Account
 
-on:
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test-sa:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Install rclone
+        run: sudo apt update && sudo apt install -y rclone
 
-      - name: Install Rclone
-        run: |
-          curl https://rclone.org/install.sh | sudo bash
+      - name: Create service account file
+        run: echo "${{ secrets.GDRIVE_SERVICE_ACCOUNT }}" > /tmp/sa.json
 
-      - name: Save Service Account Key
-        run: |
-          echo "${{ secrets.GDRIVE_SERVICE_ACCOUNT }}" > /tmp/sa.json
-
-      - name: Test Rclone with Service Account
-        run: |
-          rclone about gdrive: --drive-service-account-file /tmp/sa.json
+      - name: Test GDrive
+        run: rclone about gdrive: --drive-service-account-file /tmp/sa.json
