@@ -86,9 +86,10 @@ ffmpeg -i "$VISUAL_MASTER" -i "$AUDIO_FILE" \
 
 # --- 5. CATBOX UPLOAD, GITHUB RELEASE & WEBHOOK ---
 if [ -n "$GH_TOKEN" ]; then
-    # 1. Upload to Catbox for Instagram (Alternative Link)
+    # 1. Upload to Catbox (Direct Link for Instagram)
     echo "📤 Uploading to Catbox..."
-    CAT_URL=$(curl -F "reqtype=fileupload" -F "fileToUpload=@$out_file" https://catbox.moe/user/api.php)
+    # We use --silent to keep the variable clean and --fail to catch errors
+    CAT_URL=$(curl --silent --fail -F "reqtype=fileupload" -F "fileToUpload=@$out_file" https://catbox.moe/user/api.php || echo "UPLOAD_FAILED")
     
     # 2. Create GitHub Release (Backup Storage)
     echo "📦 Creating GitHub Release..."
@@ -96,13 +97,15 @@ if [ -n "$GH_TOKEN" ]; then
     gh release create "$TAG_NAME" "$out_file" --title "Reel: $safe_name"
     GHT_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG_NAME/$url_filename"
     
-    # 3. Use Catbox as primary downloadLink if it succeeded
-    FINAL_URL=$([ "${CAT_URL:0:4}" == "http" ] && echo "$CAT_URL" || echo "$GHT_URL")
-
     if [ -n "$WEBHOOK_URL" ]; then
         echo "🚀 Sending Webhook..."
+        # We send both clearly labeled. Use AlternativeDownLink in Make.com for Instagram.
         curl -X POST -H "Content-Type: application/json" \
-          -d "{\"downloadLink\": \"$FINAL_URL\", \"githubLink\": \"$GHT_URL\", \"fileName\": \"$safe_name\"}" \
+          -d "{
+            \"downloadLink\": \"$GHT_URL\", 
+            \"AlternativeDownLink\": \"$CAT_URL\", 
+            \"fileName\": \"$safe_name\"
+          }" \
           "$WEBHOOK_URL"
     fi
     
