@@ -1,5 +1,4 @@
 name: Render Reel Video
-
 on:
   workflow_dispatch:
 
@@ -9,35 +8,14 @@ permissions:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Ensure ffmpeg is available
-        run: |
-          if ! command -v ffmpeg &> /dev/null; then
-            sudo apt update && sudo apt install -y ffmpeg
-          fi
-
-      - name: Run script
+      - name: Run Everything
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
           chmod +x script.sh
           ./script.sh
-
-      - name: Send Webhook
-        if: success()
-        run: |
-          # The YAML 'sees' VIDEO_URL_NAME because the script put it in $GITHUB_ENV
-          DIRECT_URL="https://github.com/${{ github.repository }}/releases/download/v-${{ github.run_id }}/${{ env.VIDEO_URL_NAME }}"
-          
-          curl -X POST -H "Content-Type: application/json" \
-            -d "{
-              \"Downloadlink\": \"$DIRECT_URL\",
-              \"File name\": \"${{ env.VIDEO_DISPLAY_NAME }}\"
-            }" ${{ secrets.WEBHOOK_URL }}
