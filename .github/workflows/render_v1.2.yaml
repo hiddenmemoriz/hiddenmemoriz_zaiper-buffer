@@ -3,14 +3,13 @@ name: Render Reel Video
 on:
   workflow_dispatch:
 
-# REQUIRED: This gives the script permission to create and delete releases
 permissions:
-  contents: write
+  contents: write # Allows creating/deleting Releases
 
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # Increased slightly because 'veryslow' render takes time
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repo
@@ -21,27 +20,15 @@ jobs:
           if ! command -v ffmpeg &> /dev/null; then
             sudo apt update && sudo apt install -y ffmpeg
           else
-            echo "ffmpeg is already installed: $(ffmpeg -version | head -n 1)"
+            echo "ffmpeg is already installed"
           fi
-
-      - name: Prepare paths
-        run: mkdir -p output
 
       - name: Run script
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-          # Pass these so you don't have to hardcode them in script.sh
-          GITHUB_REPOSITORY: ${{ github.repository }} 
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }} # Add this in Repo Settings > Secrets
         run: |
           chmod +x script.sh
           ./script.sh
-
-      # You can keep this as a backup if you want, 
-      # but the Release link in your webhook is what you'll actually use.
-      - name: Upload output (Backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-video-${{ github.run_id }}
-          path: output/
-          retention-days: 1
