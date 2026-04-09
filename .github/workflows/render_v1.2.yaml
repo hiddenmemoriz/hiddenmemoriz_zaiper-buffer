@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # Allows creating/deleting Releases
+  contents: write
 
 jobs:
   render:
@@ -19,8 +19,6 @@ jobs:
         run: |
           if ! command -v ffmpeg &> /dev/null; then
             sudo apt update && sudo apt install -y ffmpeg
-          else
-            echo "ffmpeg is already installed"
           fi
 
       - name: Run script
@@ -28,7 +26,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }} # Add this in Repo Settings > Secrets
         run: |
           chmod +x script.sh
           ./script.sh
+
+      - name: Send Webhook
+        if: success()
+        run: |
+          # The YAML 'sees' VIDEO_URL_NAME because the script put it in $GITHUB_ENV
+          DIRECT_URL="https://github.com/${{ github.repository }}/releases/download/v-${{ github.run_id }}/${{ env.VIDEO_URL_NAME }}"
+          
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{
+              \"Downloadlink\": \"$DIRECT_URL\",
+              \"File name\": \"${{ env.VIDEO_DISPLAY_NAME }}\"
+            }" ${{ secrets.WEBHOOK_URL }}
