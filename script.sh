@@ -96,12 +96,13 @@ if [ -n "$GH_TOKEN" ]; then
         echo "📊 Logging to Google Sheets via SheetDB..."
         
         # Get IST Time (UTC+5:30)
-        CUR_DATE=$(date -d "+5 hours 30 minutes" +%Y-%m-%d)
-        CUR_TIME=$(date -d "+5 hours 30 minutes" +%H:%M:%S)
+DATETIME=$(date -d "+5 hours 30 minutes" "+%Y-%m-%d %H:%M:%S")
 
         curl -X POST "$SHEETDB_URL" \
           -H "Content-Type: application/json" \
-          -d "{\"data\": [{\"url\": \"$GHT_URL\", \"title\": \"$safe_name\", \"date\": \"$CUR_DATE\", \"time\": \"$CUR_TIME\"}]}"
+          -d "{\"data\": [{\"Video URL\": \"$GHT_URL\", \"Title\": \"$safe_name\", \"Timestamp\": \"$DATETIME\"}]}"
+          
+          
     else
         echo "⚠️ SHEETDB_URL not found. Skipping Google Sheets log."
     fi
