@@ -3,8 +3,6 @@ name: Render Reel Video -Make.com
 on:
   workflow_dispatch:
   push:
-    branches:
-      - beta
   schedule:
     - cron: '0 9 * * *'
       timezone: 'Asia/Kolkata'
